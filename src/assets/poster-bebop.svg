@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+  <rect width="900" height="1200" fill="#0A0A0A" />
+  <rect x="30" y="30" width="840" height="1140" fill="#F4F0EA" stroke="#0A0A0A" stroke-width="12" />
+  <rect x="60" y="60" width="780" height="220" fill="#FF9900" stroke="#0A0A0A" stroke-width="8" />
+  <text x="90" y="200" font-size="44" font-family="Space Mono, monospace" fill="#0A0A0A" letter-spacing="5">POSTER // 03</text>
+  <rect x="60" y="320" width="780" height="820" fill="#0A0A0A" />
+  <text x="90" y="560" font-size="88" font-family="Anton, sans-serif" fill="#F4F0EA" letter-spacing="6">COWBOY</text>
+  <text x="90" y="670" font-size="88" font-family="Anton, sans-serif" fill="#F4F0EA" letter-spacing="6">BEBOP</text>
+  <rect x="90" y="1020" width="360" height="50" fill="#00F0FF" stroke="#0A0A0A" stroke-width="6" />
+  <text x="110" y="1055" font-size="20" font-family="Space Mono, monospace" fill="#0A0A0A">STATIC ASSET</text>
+</svg>

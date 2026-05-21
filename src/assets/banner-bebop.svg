@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="700" viewBox="0 0 1600 700">
+  <rect width="1600" height="700" fill="#0A0A0A" />
+  <rect x="30" y="30" width="1540" height="640" fill="#F4F0EA" stroke="#0A0A0A" stroke-width="12" />
+  <rect x="60" y="60" width="1480" height="180" fill="#FF9900" stroke="#0A0A0A" stroke-width="8" />
+  <text x="100" y="170" font-size="54" font-family="Space Mono, monospace" fill="#0A0A0A" letter-spacing="6">ARCHIVE // 03</text>
+  <rect x="60" y="270" width="1480" height="360" fill="#0A0A0A" />
+  <text x="100" y="430" font-size="110" font-family="Anton, sans-serif" fill="#F4F0EA" letter-spacing="8">COWBOY</text>
+  <text x="100" y="560" font-size="110" font-family="Anton, sans-serif" fill="#F4F0EA" letter-spacing="8">BEBOP</text>
+  <rect x="100" y="590" width="420" height="50" fill="#00F0FF" stroke="#0A0A0A" stroke-width="6" />
+  <text x="120" y="625" font-size="22" font-family="Space Mono, monospace" fill="#0A0A0A">WIDE BANNER</text>
+</svg>
