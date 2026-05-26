@@ -7,10 +7,19 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const MENU_LINKS = [
-  { eng: 'ARCHIVE', jp: 'アーカイブ', color: 'var(--color-acid)', img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1200&auto=format&fit=crop' },
+  { eng: 'PROLOGUE', jp: 'プロローグ', color: 'var(--color-acid)', img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1200&auto=format&fit=crop' },
   { eng: 'GALLERY', jp: 'ギャラリー', color: 'var(--color-cyber)', img: 'https://images.unsplash.com/photo-1580136608260-4eb11f4b24fe?q=80&w=1200&auto=format&fit=crop' },
   { eng: 'MANIFESTO', jp: 'マニフェスト', color: 'var(--color-blood)', img: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?q=80&w=1200&auto=format&fit=crop' },
   { eng: 'CONTACT', jp: 'コンタクト', color: 'var(--color-mango)', img: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=1200&auto=format&fit=crop' },
+];
+
+const NEO_COLORS = [
+  'var(--color-acid)',
+  'var(--color-cyber)',
+  'var(--color-blood)',
+  'var(--color-void)',
+  'var(--color-mango)',
+  'var(--color-bubblegum)',
 ];
 
 interface MenuProps {
@@ -25,6 +34,12 @@ interface MenuProps {
 
 export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setIsStripPulledOut, mouseX, mouseY }: MenuProps) {
   const [hoveredLink, setHoveredLink] = useState<typeof MENU_LINKS[0] | null>(null);
+  const [linkColors, setLinkColors] = useState<Record<string, string>>({
+    PROLOGUE: 'var(--color-acid)',
+    GALLERY: 'var(--color-cyber)',
+    MANIFESTO: 'var(--color-blood)',
+    CONTACT: 'var(--color-mango)',
+  });
   
   const [isMobile, setIsMobile] = useState(false);
 
@@ -64,21 +79,13 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
 
   const closedWidth = isMobile ? 64 : 96; // 4rem or 6rem
   const openWidth = isMobile ? window.innerWidth * 0.85 : window.innerWidth * 0.75;
-  let targetWidth = 0;
-  if (isOpen) {
-    targetWidth = openWidth;
-  } else if (isHero || isStripPulledOut) {
-    targetWidth = closedWidth;
-  }
-
-  const isFullHeight = isHero || isOpen || isStripPulledOut;
   
-  let currentShadow = 'none';
-  if (targetWidth > 0) {
-    currentShadow = isFullHeight 
-      ? '4px 0px 16px rgba(0,0,0,0.5)' 
-      : '6px 6px 0px var(--color-ink)';
-  }
+  const targetWidth = isOpen ? openWidth : closedWidth;
+  const isVisible = isHero || isOpen || isStripPulledOut;
+  
+  const currentShadow = isVisible 
+    ? '4px 0px 16px rgba(0,0,0,0.5)' 
+    : 'none';
 
   return (
     <>
@@ -86,19 +93,25 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
         initial={false}
         animate={{ 
           width: targetWidth,
-          height: isFullHeight ? '100%' : '240px',
-          top: isFullHeight ? '0%' : '40%',
-          y: isFullHeight ? '0%' : '-50%',
-          borderRadius: isFullHeight ? '0px' : '0px 8px 8px 0px',
+          height: '100%',
+          top: '0%',
+          y: '0%',
+          x: isVisible ? 0 : -(closedWidth + 8),
+          borderRadius: '0px',
           boxShadow: currentShadow
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 30, 
+          mass: 1 
+        }}
         className="fixed left-0 flex z-50 overflow-hidden"
         style={{ 
           backgroundColor: isOpen ? 'var(--color-ink)' : 'transparent',
-          borderRightWidth: targetWidth === 0 ? 0 : 4,
-          borderTopWidth: (targetWidth === 0 || isFullHeight) ? 0 : 4,
-          borderBottomWidth: (targetWidth === 0 || isFullHeight) ? 0 : 4,
+          borderRightWidth: 4,
+          borderTopWidth: 0,
+          borderBottomWidth: 0,
           borderStyle: 'solid',
           borderColor: 'var(--color-ink)'
         }}
@@ -162,7 +175,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
         
         {/* Japanese Text (Background) */}
         <motion.div 
-          className="absolute font-jp font-black text-xl md:text-3xl lg:text-4xl whitespace-nowrap pointer-events-none text-current"
+          className="absolute font-jp font-black text-xl md:text-3xl lg:text-4xl whitespace-nowrap pointer-events-none text-white mix-blend-difference z-10"
           variants={{
             mount: { top: "50%", left: "50%", x: "-50%", y: "-50%", opacity: 0, rotate: -90, scale: 2 },
             idle: { top: "50%", left: "50%", x: "-50%", y: "-50%", opacity: 0.15, rotate: -90, scale: 1.5 },
@@ -177,7 +190,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
 
         {/* English Text (Foreground) */}
         <motion.div 
-          className="absolute font-display text-xl md:text-3xl lg:text-4xl whitespace-nowrap pointer-events-none text-current"
+          className="absolute font-display text-xl md:text-3xl lg:text-4xl whitespace-nowrap pointer-events-none text-white mix-blend-difference z-10"
           variants={{
             mount: { top: "50%", left: "50%", x: "-50%", y: "-50%", opacity: 0, letterSpacing: "0.1em", rotate: -90 },
             idle: { top: "50%", left: "50%", x: "-50%", y: "-50%", opacity: 1, letterSpacing: "0.1em", rotate: -90 },
@@ -217,13 +230,36 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
             {MENU_LINKS.map((link, i) => {
               const isHovered = hoveredLink?.eng === link.eng;
               const hasHover = hoveredLink !== null;
+              const currentColor = linkColors[link.eng] || link.color;
 
               return (
                 <motion.a 
                   href="#"
                   key={link.eng}
-                  onHoverStart={() => setHoveredLink(link)}
+                  onHoverStart={() => {
+                    setHoveredLink(link);
+                    const current = linkColors[link.eng] || link.color;
+                    const filtered = NEO_COLORS.filter(c => c !== current);
+                    const randomColor = filtered[Math.floor(Math.random() * filtered.length)];
+                    setLinkColors(prev => ({
+                      ...prev,
+                      [link.eng]: randomColor
+                    }));
+                  }}
                   onHoverEnd={() => setHoveredLink(null)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsOpen(false);
+                    if (link.eng === 'PROLOGUE') {
+                      if ((window as any).lenis) {
+                        (window as any).lenis.scrollTo(0);
+                      }
+                    } else if (link.eng === 'GALLERY') {
+                      if ((window as any).lenis) {
+                        (window as any).lenis.scrollTo(window.innerWidth);
+                      }
+                    }
+                  }}
                   animate={{
                     flex: isHovered ? 6 : hasHover ? 1 : 2 
                   }}
@@ -288,7 +324,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
                       fontSize="115" 
                       className="font-display uppercase" 
                       animate={{
-                        fill: isHovered ? link.color : (!hasHover ? 'var(--color-ink)' : 'transparent'),
+                        fill: isHovered ? currentColor : (!hasHover ? 'var(--color-ink)' : 'transparent'),
                         stroke: 'var(--color-ink)',
                         strokeWidth: isHovered ? 6 : (hasHover && !isHovered ? 3 : 0),
                         opacity: hasHover && !isHovered ? 0.3 : 1
@@ -308,7 +344,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
                         exit={{ opacity: 0, scale: 0.5, rotate: -10 }}
                         transition={{ type: "spring", stiffness: 500, damping: 20 }}
                         className="absolute right-12 bottom-12 z-20 px-6 py-2 border-[4px] border-ink shadow-[8px_8px_0px_var(--color-ink)] pointer-events-none"
-                        style={{ backgroundColor: link.color }}
+                        style={{ backgroundColor: currentColor }}
                       >
                         <span className="font-jp font-black text-4xl text-ink tracking-widest">
                           {link.jp}

@@ -106,7 +106,7 @@ export default function Logo({ mouseX, mouseY }: LogoProps) {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="font-display text-6xl md:text-8xl lg:text-[8vw] leading-none tracking-tighter text-ink relative z-10"
             >
-              WALAN
+              ANWAL
             </motion.h1>
 
             {/* Japanese Translation Overlapping - Vertical Cycle Animation */}
@@ -132,7 +132,7 @@ export default function Logo({ mouseX, mouseY }: LogoProps) {
               className="absolute font-jp font-black text-4xl md:text-6xl lg:text-[5vw] leading-none text-paper mix-blend-difference z-20 top-1/2 left-1/2 whitespace-nowrap pointer-events-none"
               style={{ textShadow: '4px 4px 0px #0A0A0A' }}
             >
-              ワラン
+              アンワル
             </motion.h2>
           </motion.div>
         </motion.div>

@@ -1,5 +1,5 @@
 {
-  "name": "walan",
+  "name": "anwal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,8 +12,10 @@
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
+    "fast-average-color": "^9.5.2",
     "framer-motion": "^12.39.0",
     "gsap": "^3.15.0",
+    "imagetracerjs": "^1.2.6",
     "lenis": "^1.3.23",
     "lucide-react": "^1.16.0",
     "maath": "^0.10.8",

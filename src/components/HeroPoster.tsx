@@ -468,6 +468,7 @@ export default function HeroPoster({ onLoaded }: HeroPosterProps) {
   // Handle pointer tracking
   const bannerRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isMobile) return; // Disable parallax on mobile
     if (!bannerRef.current) return;
     const rect = bannerRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);

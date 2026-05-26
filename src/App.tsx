@@ -7,7 +7,7 @@ import Logo from './components/Logo';
 import Menu from './components/Menu';
 import ThermalText from './components/ThermalText';
 import HeroPoster from './components/HeroPoster';
-import AnimeSearchPoster from './components/AnimeSearchPoster';
+import KineticGallery from './components/KineticGallery';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -30,6 +30,17 @@ function App() {
     return () => mql.removeEventListener('change', listener);
   }, []);
 
+  // Ensure refresh starts at the hero and keeps the menu strip visible
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+    setShowMenuTag(false);
+    setIsStripPulledOut(false);
+    setIsMenuOpen(false);
+  }, []);
+
   // Monitor vertical scroll position (which triggers horizontal pagination via GSAP pinning)
   useEffect(() => {
     const handleScroll = () => {
@@ -48,7 +59,9 @@ function App() {
     if (!isHeroLoaded) return;
     const updateHeight = () => {
       if (scrollContainerRef.current) {
-        setScrollHeight(scrollContainerRef.current.scrollWidth - window.innerWidth + window.innerHeight);
+        const scrollRange = scrollContainerRef.current.scrollWidth - window.innerWidth;
+        const mobileMultiplier = isMobile ? 1.8 : 1;
+        setScrollHeight(scrollRange * mobileMultiplier + window.innerHeight);
       }
     };
     const timer = setTimeout(updateHeight, 100);
@@ -74,6 +87,7 @@ function App() {
   // Handle pointer tracking
   const sectionRef = useRef<HTMLDivElement>(null);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isMobile) return; // Disable parallax on mobile
     if (!sectionRef.current) return;
     const rect = sectionRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
@@ -132,6 +146,10 @@ function App() {
       smoothWheel: true,
     });
 
+    // Force scroll position to the hero on init
+    lenis.scrollTo(0, { immediate: true });
+    window.scrollTo(0, 0);
+
     // Expose lenis globally for component scrollTo interactions
     (window as any).lenis = lenis;
 
@@ -152,7 +170,11 @@ function App() {
       scrollTrigger: {
         trigger: 'body',
         start: 'top top',
-        end: () => '+=' + ((scrollContainerRef.current?.scrollWidth || 0) - window.innerWidth),
+        end: () => {
+          const scrollRange = (scrollContainerRef.current?.scrollWidth || 0) - window.innerWidth;
+          const mobileMultiplier = window.matchMedia('(max-width: 1023px)').matches ? 1.8 : 1;
+          return '+=' + (scrollRange * mobileMultiplier);
+        },
         scrub: true, // Perfect alignment with Lenis scroll
         invalidateOnRefresh: true,
       },
@@ -189,6 +211,20 @@ function App() {
       rotate: -15,
       ease: 'none',
     }, 0);
+
+    // Parallax: Move the gallery heading from center to top-left while the gallery is in view
+    gsap.to(".parallax-gallery-heading", {
+      x: -380,
+      y: -70,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: ".gallery-shell",
+        start: "left center",
+        end: "right center",
+        scrub: true,
+        containerAnimation: tl,
+      },
+    });
 
     // Synchronize Lenis dimensions with ScrollTrigger updates
     const handleRefresh = () => {
@@ -293,30 +329,7 @@ function App() {
             onClick={handleSectionClick}
             className="h-screen shrink-0 bg-paper border-r-8 border-ink relative overflow-hidden gpu-layer w-screen"
           >
-            <div 
-              className="w-full h-full flex flex-col lg:flex-row items-center justify-between p-8 lg:p-16"
-            >
-              {/* Brutalist Archive Text on the Left */}
-              <div className="w-full lg:w-[45vw] flex flex-col justify-between h-auto lg:h-full py-8 pointer-events-none">
-                <div>
-                  <div className="font-mono text-xs font-bold text-blood mb-2">[ SECTOR_02 // KINETIC_GALLERY ]</div>
-                  <h2 className="font-display text-[6vw] leading-tight tracking-tighter text-ink uppercase">
-                    THE<br />MANGA<br />ARCHIVE
-                  </h2>
-                </div>
-                
-                <div className="max-w-md font-mono text-[11px] text-ink/70 leading-relaxed uppercase mt-4 lg:mt-0">
-                  THIS IS A FULLY SYNCHRONIZED INTERACTIVE TERMINAL DRAWING DIRECTLY FROM THE KITSU PUBLIC EDGE VAULT AND ITS METADATA FEED. 
-                  <br /><br />
-                  QUERY ANY SERIES TO STAMP NEW WALLPAPERS AND RECOVER SYSTEM DATA IN REAL TIME.
-                </div>
-              </div>
-
-              {/* Anime Search Poster on the Right */}
-              <div className="flex-1 flex justify-center items-center h-full w-full mt-4 lg:mt-0">
-                <AnimeSearchPoster />
-              </div>
-            </div>
+            <KineticGallery />
           </section>
 
         </div>
