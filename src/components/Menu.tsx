@@ -109,7 +109,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
         className="fixed left-0 flex z-50 overflow-hidden"
         style={{ 
           backgroundColor: isOpen ? 'var(--color-ink)' : 'transparent',
-          borderRightWidth: 4,
+          borderRightWidth: 0,
           borderTopWidth: 0,
           borderBottomWidth: 0,
           borderStyle: 'solid',
@@ -126,7 +126,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
         initial="mount"
         animate="idle"
         whileHover="hover"
-        className="w-16 lg:w-24 h-full shrink-0 flex flex-col justify-between items-center py-8 cursor-pointer relative z-20 border-r-4 border-ink overflow-hidden"
+        className="w-16 lg:w-24 h-full shrink-0 flex flex-col justify-between items-center py-8 cursor-pointer relative z-20 overflow-hidden"
         variants={{
           mount: { 
             x: -100, 
@@ -202,6 +202,9 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
             {isOpen ? 'CLOSE' : 'MENU'}
           </motion.div>
         </motion.div>
+
+        {/* Sketchy Right Border for Menu Strip Handle */}
+        <div className="absolute top-0 right-0 bottom-0 w-[4px] border-r-4 border-ink pointer-events-none z-30 sketchy-border" />
       </motion.div>
 
       {/* 
@@ -343,7 +346,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
                         animate={{ opacity: 1, scale: 1, rotate: -2 }}
                         exit={{ opacity: 0, scale: 0.5, rotate: -10 }}
                         transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                        className="absolute right-12 bottom-12 z-20 px-6 py-2 border-[4px] border-ink shadow-[8px_8px_0px_var(--color-ink)] pointer-events-none"
+                        className="absolute right-12 bottom-12 z-20 px-6 py-2 border-[4px] border-ink shadow-[8px_8px_0px_var(--color-ink)] pointer-events-none sketchy-border"
                         style={{ backgroundColor: currentColor }}
                       >
                         <span className="font-jp font-black text-4xl text-ink tracking-widest">
@@ -359,6 +362,8 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Sketchy Right Border for sliding menu drawer */}
+      <div className="absolute top-0 right-0 bottom-0 w-[4px] border-r-4 border-ink pointer-events-none z-50 sketchy-border" />
     </motion.div>
 
     {/* THE RED FABRIC PULL TAG */}
@@ -381,7 +386,7 @@ export default function Menu({ isOpen, setIsOpen, isHero, isStripPulledOut, setI
           onClick={() => setIsStripPulledOut(true)}
         >
           {/* Tag visual */}
-          <div className="w-[300px] bg-[#ff003c] border-2 border-l-0 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] py-8 pr-3 flex justify-end cursor-grab active:cursor-grabbing rounded-r-md relative overflow-hidden">
+          <div className="w-[300px] bg-[#ff003c] border-2 border-l-0 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] py-8 pr-3 flex justify-end cursor-grab active:cursor-grabbing rounded-r-md relative overflow-hidden sketchy-border">
             <span className="font-mono text-black font-black uppercase text-sm tracking-widest relative z-10" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
               PULL
             </span>

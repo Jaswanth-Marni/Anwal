@@ -40,8 +40,10 @@ export default function Logo({ mouseX, mouseY }: LogoProps) {
           hover: { backgroundColor: 'var(--color-blood)' }
         }}
         transition={{ duration: 0 }} // Instant color change for brutalism
-        className="flex-1 relative flex items-center justify-center border-b-[4px] border-ink overflow-hidden"
+        className="flex-1 relative flex items-center justify-center overflow-hidden"
       >
+        {/* Sketchy Bottom Border */}
+        <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-[4px] border-ink pointer-events-none z-30 sketchy-border" />
         
         <style>{`
           @keyframes conveyer-grid {

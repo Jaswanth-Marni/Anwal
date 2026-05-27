@@ -115,7 +115,7 @@ export default function HeroWall() {
         {wallpapers.map((wp, i) => (
           <motion.div
             key={wp.id}
-            className="absolute w-[35vw] aspect-video bg-ink p-2 shadow-2xl border-4 border-ink group pointer-events-auto cursor-pointer flex flex-col justify-end"
+            className="absolute w-[35vw] aspect-video bg-ink p-2 shadow-2xl group pointer-events-auto cursor-pointer flex flex-col justify-end relative"
             style={{
               left: wp.x,
               top: wp.y,
@@ -153,6 +153,9 @@ export default function HeroWall() {
               transition: { type: 'spring', stiffness: 400, damping: 25 }
             }}
           >
+            {/* Sketchy border overlay */}
+            <div className="absolute inset-0 border-4 border-ink pointer-events-none z-30 sketchy-border" />
+
             {/* The Image */}
             <div className="absolute inset-0 p-2 pointer-events-none z-0">
               <img 
@@ -163,7 +166,7 @@ export default function HeroWall() {
             </div>
             
             {/* Brutalist Tape/Sticker to make it look manually stuck on */}
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-16 h-6 bg-paper opacity-80 rotate-[-3deg] border-2 border-ink z-10 pointer-events-none"></div>
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-16 h-6 bg-paper opacity-80 rotate-[-3deg] border-2 border-ink z-10 pointer-events-none sketchy-border"></div>
             
             {/* Overlay Metadata synced to the Anime Title */}
             <div className="relative z-10 self-start ml-2 mb-2 bg-ink text-paper font-mono text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">

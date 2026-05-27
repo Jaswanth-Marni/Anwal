@@ -86,10 +86,6 @@ html.lenis, html.lenis body {
   overflow: hidden;
 }
 
-.lenis.lenis-scrolling iframe {
-  pointer-events: none;
-}
-
 /* GPU acceleration classes for smoother animation/scroll transitions */
 .gpu-layer {
   will-change: transform;
@@ -97,3 +93,7 @@ html.lenis, html.lenis body {
   backface-visibility: hidden;
 }
 
+/* Global Sketchy Border displacement filter application */
+.sketchy-border {
+  filter: url(#manga-sketchy-border);
+}

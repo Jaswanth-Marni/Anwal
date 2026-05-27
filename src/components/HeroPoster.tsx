@@ -633,8 +633,11 @@ export default function HeroPoster({ onLoaded }: HeroPosterProps) {
         onClick={() => setIsSliderOpen(!isSliderOpen)}
         onMouseEnter={() => setIsStripHovered(true)}
         onMouseLeave={() => setIsStripHovered(false)}
-        className="w-full h-16 lg:w-24 lg:h-full shrink-0 border-b-4 lg:border-b-0 lg:border-r-4 border-ink bg-paper relative overflow-hidden z-20 flex flex-row lg:flex-col justify-center items-center cursor-pointer hover:bg-[#EBE7DF] transition-colors select-none group/strip"
+        className="w-full h-16 lg:w-24 lg:h-full shrink-0 bg-paper relative overflow-hidden z-20 flex flex-row lg:flex-col justify-center items-center cursor-pointer hover:bg-[#EBE7DF] transition-colors select-none group/strip"
       >
+        {/* Sketchy Borders for Explore Strip */}
+        <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-4 border-ink pointer-events-none z-30 sketchy-border block lg:hidden" />
+        <div className="absolute top-0 right-0 bottom-0 w-[4px] border-r-4 border-ink pointer-events-none z-30 sketchy-border hidden lg:block" />
         <style>{`
           @keyframes conveyer-mesh {
             0% {
@@ -876,13 +879,16 @@ export default function HeroPoster({ onLoaded }: HeroPosterProps) {
               transition={{ type: 'spring', stiffness: 260, damping: 24 }}
               className="w-full bg-paper relative z-30 overflow-hidden shrink-0"
             >
-              <div className="w-full border-t-4 border-ink p-6 flex flex-col md:flex-row gap-6 shadow-[0_-8px_24px_rgba(0,0,0,0.15)] select-text">
+              <div className="w-full p-6 flex flex-col md:flex-row gap-6 shadow-[0_-8px_24px_rgba(0,0,0,0.15)] select-text relative">
+                {/* Sketchy Top Border Overlay */}
+                <div className="absolute top-0 left-0 right-0 h-[4px] border-t-4 border-ink pointer-events-none z-30 sketchy-border" />
+
                 {/* Left Side: Metadata and Info */}
                 <div className="flex-1 flex flex-col justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span 
-                        className="font-mono text-[10px] font-bold px-2 py-0.5 border uppercase tracking-widest bg-paper"
+                        className="font-mono text-[10px] font-bold px-2 py-0.5 border uppercase tracking-widest bg-paper sketchy-border"
                         style={{
                           color: scheme.hex,
                           borderColor: scheme.hex,
@@ -902,14 +908,15 @@ export default function HeroPoster({ onLoaded }: HeroPosterProps) {
                     <h3 className="font-display text-2xl tracking-tighter text-ink uppercase mb-2">
                       {featured.title}
                     </h3>
-
+                    
                     <p className="font-mono text-[11px] leading-relaxed text-ink/75 uppercase line-clamp-3">
                       {featured.synopsis || 'NO DESCRIPTION FILE RECOVERED FROM THE KITSU API METADATA FEED.'}
                     </p>
                   </div>
 
                   {/* Studio & Airing Info Row */}
-                  <div className="flex gap-6 border-t border-ink/15 pt-3 font-mono text-[10px] font-bold text-ink uppercase tracking-widest">
+                  <div className="flex gap-6 pt-3 font-mono text-[10px] font-bold text-ink uppercase tracking-widest relative">
+                    <div className="absolute top-0 left-0 right-0 h-px border-t border-ink/15 pointer-events-none z-10 sketchy-border" />
                     <div>
                       <span className="text-ink/40">STUDIO //</span>{' '}
                       <span style={{ color: scheme.hex }}>{getStudioForAnime(featured.title)}</span>
@@ -926,7 +933,8 @@ export default function HeroPoster({ onLoaded }: HeroPosterProps) {
                 </div>
 
                 {/* Right Side: Explorer Link / Action */}
-                <div className="flex shrink-0 items-center justify-center md:border-l border-ink/15 md:pl-6">
+                <div className="flex shrink-0 items-center justify-center md:pl-6 relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-px border-l border-ink/15 pointer-events-none z-10 sketchy-border hidden md:block" />
                   <motion.button
                     onClick={() => {
                       window.dispatchEvent(
@@ -937,7 +945,7 @@ export default function HeroPoster({ onLoaded }: HeroPosterProps) {
                       backgroundColor: scheme.hex,
                       boxShadow: `6px 6px 0px ${scheme.hex}`,
                     }}
-                    className="px-6 py-4 bg-ink text-paper font-mono text-xs font-black uppercase tracking-widest border-2 border-ink active:translate-x-[2px] active:translate-y-[2px] transition-all flex items-center gap-2 group cursor-pointer"
+                    className="px-6 py-4 bg-ink text-paper font-mono text-xs font-black uppercase tracking-widest border-2 border-ink active:translate-x-[2px] active:translate-y-[2px] transition-all flex items-center gap-2 group cursor-pointer sketchy-border"
                     style={{
                       boxShadow: `4px 4px 0px ${scheme.hex}`,
                     }}

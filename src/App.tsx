@@ -62,6 +62,8 @@ function App() {
         const scrollRange = scrollContainerRef.current.scrollWidth - window.innerWidth;
         const mobileMultiplier = isMobile ? 1.8 : 1;
         setScrollHeight(scrollRange * mobileMultiplier + window.innerHeight);
+        // Ensure GSAP recalculates bounds after DOM updates to prevent white gaps
+        setTimeout(() => ScrollTrigger.refresh(), 50);
       }
     };
     const timer = setTimeout(updateHeight, 100);
@@ -268,14 +270,21 @@ function App() {
         mouseY={mouseY} 
       />
 
+      {/* Split background to handle overscroll bounce smoothly without affecting layout:
+          Left half is white for Hero, Right half is black for Gallery. */}
+      <div className="fixed inset-0 z-0 pointer-events-none flex">
+        <div className="w-1/2 h-full bg-paper" />
+        <div className="w-1/2 h-full bg-ink" />
+      </div>
+
       {/* 
         MAIN CONTENT VIEWPORT 
         This wrapper is fixed to prevent vertical scrolling and containing block conflicts.
       */}
       <div 
-        className="fixed top-0 left-0 w-screen h-screen flex overflow-hidden"
+        className="fixed top-0 left-0 w-screen h-screen flex overflow-hidden z-10"
       >
-        <div ref={scrollContainerRef} className="flex h-screen w-[max-content] gpu-layer">
+        <div ref={scrollContainerRef} className="flex h-screen w-[max-content] gpu-layer relative">
           
           {/* =========================================
               SECTION 1: THE COVER (HERO)
@@ -285,7 +294,7 @@ function App() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             onClick={handleSectionClick}
-            className="relative h-screen flex shrink-0 border-r-8 border-ink overflow-hidden gpu-layer w-screen"
+            className="relative h-screen flex shrink-0 overflow-hidden gpu-layer w-screen"
           >
             {/* Main Layout Area - translated to the right to make room for the Menu */}
             <motion.div 
@@ -294,9 +303,11 @@ function App() {
               transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
             >
               {/* Top Navigation Bar / Masthead */}
-              <header className="h-[20vh] border-b-4 border-ink flex items-stretch z-20 bg-paper relative">
+              <header className="h-[20vh] flex items-stretch z-20 bg-paper relative">
                 {/* The Massive Full-Width Logo */}
                 <Logo mouseX={mouseX} mouseY={mouseY} />
+                {/* Sketchy Bottom Border */}
+                <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-4 border-ink pointer-events-none z-30 sketchy-border" />
               </header>
 
               {/* Main Hero White Space */}
@@ -320,6 +331,9 @@ function App() {
                 </div>
               </motion.div>
             </motion.div>
+
+            {/* Sketchy Right Border for Hero Section */}
+            <div className="absolute top-0 right-0 bottom-0 w-[8px] border-r-8 border-ink pointer-events-none z-50 sketchy-border" />
           </section>
 
           {/* =========================================
@@ -327,9 +341,11 @@ function App() {
               ========================================= */}
           <section 
             onClick={handleSectionClick}
-            className="h-screen shrink-0 bg-paper border-r-8 border-ink relative overflow-hidden gpu-layer w-screen"
+            className="h-screen shrink-0 bg-paper relative overflow-hidden gpu-layer w-screen"
           >
             <KineticGallery />
+            {/* Sketchy Right Border for Gallery Section */}
+            <div className="absolute top-0 right-0 bottom-0 w-[8px] border-r-8 border-ink pointer-events-none z-50 sketchy-border" />
           </section>
 
         </div>
@@ -340,6 +356,16 @@ function App() {
         style={{ height: scrollHeight }} 
         className="pointer-events-none w-px z-0" 
       />
+
+      {/* Hidden SVG for global displacement filters */}
+      <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
+        <defs>
+          <filter id="manga-sketchy-border" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Search, Image as ImageIcon, LayoutTemplate, Download, X, BookOpen } from 'lucide-react';
+import { Search, Image as ImageIcon, LayoutTemplate, Download, X, BookOpen, Columns, Rows } from 'lucide-react';
 import { fetchTopAnime, searchAnime, type NormalizedAnime } from '../api/kitsu';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
 import GalleryShaderText from './GalleryShaderText';
@@ -33,6 +33,13 @@ const MANGA_POLYGONS = [
   "polygon(0% 0%, 90% 0%, 100% 100%, 10% 100%)"
 ];
 
+const MANGA_HORIZONTAL_POLYGONS = [
+  "polygon(0% 0%, 100% 0%, 100% 85%, 0% 100%)",
+  "polygon(0% 15%, 100% 0%, 100% 100%, 0% 100%)",
+  "polygon(0% 0%, 100% 10%, 100% 100%, 0% 90%)",
+  "polygon(0% 0%, 100% 0%, 100% 95%, 0% 100%)"
+];
+
 const HOVERED_POLYGON = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
 
 export default function KineticGallery() {
@@ -48,6 +55,8 @@ export default function KineticGallery() {
   const [hoveredThumbIndex, setHoveredThumbIndex] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'bento' | 'manga'>('bento');
   const [hoveredMangaIndex, setHoveredMangaIndex] = useState<number | null>(null);
+  const [mangaLayout, setMangaLayout] = useState<'vertical' | 'horizontal'>('vertical');
+  const [activeDownloadIndex, setActiveDownloadIndex] = useState<number | null>(null);
 
   // Actual pixel dimensions the image occupies after layout
   const [imgWidth, setImgWidth] = useState(0);
@@ -99,6 +108,10 @@ export default function KineticGallery() {
   const galleryRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
+  const getPanelColor = (idx: number) => {
+    return FUNKY_HIGHLIGHT_COLORS[idx % FUNKY_HIGHLIGHT_COLORS.length].hex;
+  };
+
   const borderX = useMotionValue(0);
   const borderY = useMotionValue(0);
 
@@ -147,7 +160,18 @@ export default function KineticGallery() {
   };
 
   const handleGalleryMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (viewMode === 'manga') return;
+    if (viewMode === 'manga') {
+      if (galleryRef.current) {
+        const rect = galleryRef.current.getBoundingClientRect();
+        const mouseXRel = e.clientX - rect.left;
+        const mouseYRel = e.clientY - rect.top;
+        const percentX = (mouseXRel / rect.width) * 2 - 1; // -1 to 1
+        const percentY = (mouseYRel / rect.height) * 2 - 1; // -1 to 1
+        galleryRef.current.style.setProperty('--manga-mouse-x', `${percentX * 12}px`);
+        galleryRef.current.style.setProperty('--manga-mouse-y', `${percentY * 12}px`);
+      }
+      return;
+    }
     if (!galleryRef.current) return;
 
     const rect = galleryRef.current.getBoundingClientRect();
@@ -595,61 +619,91 @@ export default function KineticGallery() {
 
   const imageLoaded = imageRatio !== null && imgWidth > 0 && imgHeight > 0;
 
-  const renderSearchBar = (className = '') => (
-    <form onSubmit={handleSearch} className={`flex border-white bg-ink shrink-0 items-stretch ${className}`}>
-      {/* View Mode Toggle */}
-      <button 
-        type="button"
-        onClick={() => setViewMode(prev => prev === 'bento' ? 'manga' : 'bento')}
-        className="px-4 bg-acid text-ink border-r-2 border-white hover:bg-white hover:text-ink transition-colors shrink-0 font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1.5"
-        title="TOGGLE VIEW MODE"
-      >
-        {viewMode === 'bento' ? <BookOpen size={12} strokeWidth={3} /> : <LayoutTemplate size={12} strokeWidth={3} />}
-        <span>{viewMode === 'bento' ? 'MANGA' : 'BENTO'}</span>
-      </button>
-      
-      <div className="relative flex-1 flex items-center bg-transparent">
-        <input 
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="SEARCH DATABASE..."
-          className="bg-transparent font-mono text-xs px-5 py-4 outline-none uppercase flex-1 placeholder-white/40 text-white min-w-0 tracking-[0.15em] focus:bg-white/5 transition-colors duration-300 pr-10"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery('')}
-            className="absolute right-3 p-1.5 text-white/50 hover:text-acid hover:scale-110 transition-all cursor-pointer z-10"
-            title="CLEAR SEARCH"
-          >
-            <X size={14} strokeWidth={3} />
-          </button>
+  const renderSearchBar = (className = '') => {
+    // Check if className contains a border style
+    const hasBorder = className.includes('border');
+    // Remove border styles from className to avoid double borders
+    const cleanClassName = className.replace(/border(-[a-z])?-([0-9]|white)/g, '').trim();
+    return (
+      <form onSubmit={handleSearch} className={`flex bg-ink shrink-0 items-stretch relative ${cleanClassName}`}>
+        {/* Sketchy Border for search bar */}
+        {hasBorder && (
+          <div className={`absolute inset-0 border-white pointer-events-none z-30 sketchy-border ${
+            className.includes('border-b') ? 'border-b-2' : ''
+          } ${
+            className.includes('border-2') ? 'border-2' : ''
+          } ${
+            className.includes('border-t') ? 'border-t-2' : ''
+          } ${
+            className.includes('border-l') ? 'border-l-2' : ''
+          } ${
+            className.includes('border-r') ? 'border-r-2' : ''
+          }`} />
         )}
-      </div>
-      <motion.button 
-        whileHover={{ scale: 1.15 }}
-        whileTap={{ scale: 0.9 }}
-        type="submit" 
-        className="px-5 bg-white text-ink border-l-2 border-white hover:bg-acid transition-colors shrink-0"
-      >
-        <Search size={18} strokeWidth={3} />
-      </motion.button>
-    </form>
-  );
+        
+        {/* View Mode Toggle */}
+        <button 
+          type="button"
+          onClick={() => setViewMode(prev => prev === 'bento' ? 'manga' : 'bento')}
+          className="px-4 bg-acid text-ink border-r-2 border-white hover:bg-white hover:text-ink transition-colors shrink-0 font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1.5 sketchy-border relative z-10"
+          title="TOGGLE VIEW MODE"
+        >
+          {viewMode === 'bento' ? <BookOpen size={12} strokeWidth={3} /> : <LayoutTemplate size={12} strokeWidth={3} />}
+          <span>{viewMode === 'bento' ? 'MANGA' : 'BENTO'}</span>
+        </button>
+        
+        <div className="relative flex-1 flex items-center bg-transparent relative z-10">
+          <input 
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="SEARCH DATABASE..."
+            className="bg-transparent font-mono text-xs px-5 py-4 outline-none uppercase flex-1 placeholder-white/40 text-white min-w-0 tracking-[0.15em] focus:bg-white/5 transition-colors duration-300 pr-10"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="absolute right-3 p-1.5 text-white/50 hover:text-acid hover:scale-110 transition-all cursor-pointer z-10"
+              title="CLEAR SEARCH"
+            >
+              <X size={14} strokeWidth={3} />
+            </button>
+          )}
+        </div>
+        <motion.button 
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.9 }}
+          type="submit" 
+          className="px-5 bg-white text-ink border-l-2 border-white hover:bg-acid transition-colors shrink-0 sketchy-border relative z-10"
+        >
+          <Search size={18} strokeWidth={3} />
+        </motion.button>
+      </form>
+    );
+  };
 
   const renderMobileHeader = () => {
+    const activeHeaderColor = viewMode === 'manga' ? getPanelColor(currentIndex) : '#3D00FF';
+
     if (showMobileSearch) {
       return (
-        <div className="h-[10vh] border-b-[4px] border-white flex items-center px-4 bg-void gap-3 z-30 shrink-0 w-full">
+        <motion.div 
+          animate={{ backgroundColor: activeHeaderColor }}
+          transition={{ duration: 0.3 }}
+          className="h-[10vh] flex items-center px-4 bg-void gap-3 z-30 shrink-0 w-full relative"
+        >
+          {/* Sketchy Bottom Border */}
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-[4px] border-white pointer-events-none z-30 sketchy-border" />
+          
           <button 
             type="button" 
             onClick={() => setShowMobileSearch(false)}
-            className="p-2 text-white hover:text-acid"
+            className="p-2 text-white hover:text-acid z-10"
           >
             <X size={20} strokeWidth={3} />
           </button>
-          <form onSubmit={handleSearch} className="flex-1 flex border-2 border-white bg-ink items-stretch h-10">
+          <form onSubmit={handleSearch} className="flex-1 flex border-2 border-white bg-ink items-stretch h-10 sketchy-border z-10">
             <input 
               type="text"
               value={query}
@@ -671,36 +725,43 @@ export default function KineticGallery() {
               <Search size={14} strokeWidth={3} />
             </button>
           </form>
-        </div>
+        </motion.div>
       );
     }
 
     return (
-      <div className="h-[10vh] border-b-[4px] border-white flex items-center justify-between px-4 bg-void z-30 shrink-0 w-full">
-        <div className="flex items-center gap-2">
+      <motion.div 
+        animate={{ backgroundColor: activeHeaderColor }}
+        transition={{ duration: 0.3 }}
+        className="h-[10vh] flex items-center justify-between px-4 z-30 shrink-0 w-full relative"
+      >
+        {/* Sketchy Bottom Border */}
+        <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-[4px] border-white pointer-events-none z-30 sketchy-border" />
+        
+        <div className="flex items-center gap-2 z-10">
           <GalleryShaderText text="GALLERY" className="text-2xl font-display uppercase m-0 leading-none mix-blend-difference" />
-          <span className="font-mono text-[8px] font-bold bg-white text-ink px-1.5 py-0.5 border border-ink uppercase tracking-widest animate-pulse">
+          <span className="font-mono text-[8px] font-bold bg-white text-ink px-1.5 py-0.5 border border-ink uppercase tracking-widest animate-pulse sketchy-border">
             {viewMode === 'bento' ? 'BENTO' : 'MANGA'}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 z-10">
           <button
             type="button"
             onClick={() => setShowMobileSearch(true)}
-            className="p-2 border-2 border-white bg-ink text-white hover:bg-acid hover:text-ink active:scale-95 transition-all"
+            className="p-2 border-2 border-white bg-ink text-white hover:bg-acid hover:text-ink active:scale-95 transition-all sketchy-border"
           >
             <Search size={16} strokeWidth={3} />
           </button>
           <button 
             type="button"
             onClick={() => setViewMode(prev => prev === 'bento' ? 'manga' : 'bento')}
-            className="px-2.5 py-2 border-2 border-white bg-acid text-ink font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1 hover:bg-white hover:text-ink active:scale-95 transition-all"
+            className="px-2.5 py-2 border-2 border-white bg-acid text-ink font-mono font-black text-[9px] uppercase tracking-wider flex items-center gap-1 hover:bg-white hover:text-ink active:scale-95 transition-all sketchy-border"
           >
             {viewMode === 'bento' ? <BookOpen size={10} strokeWidth={3} /> : <LayoutTemplate size={10} strokeWidth={3} />}
             <span>{viewMode === 'bento' ? 'MANGA' : 'BENTO'}</span>
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
@@ -730,6 +791,11 @@ export default function KineticGallery() {
             {/* Panels Slider (90vh) */}
             <div 
               ref={mobileMangaRef}
+              data-lenis-prevent="true"
+              onScroll={(e) => {
+                const scrollLeft = e.currentTarget.scrollLeft;
+                e.currentTarget.style.setProperty('--manga-scroll-x', `${(scrollLeft * 0.08) % 24}px`);
+              }}
               className="w-full h-[90vh] flex flex-row items-center overflow-x-auto snap-x snap-mandatory px-6 gap-4 bg-ink py-4 scrollbar-none"
               style={{ scrollbarWidth: 'none' }}
             >
@@ -740,7 +806,7 @@ export default function KineticGallery() {
                 
                 return (
                   <motion.div
-                    key={item.id}
+                    key={`mobile-manga-${item.id}`}
                     onClick={() => {
                       if (idx !== currentIndex) {
                         triggerImpact();
@@ -756,20 +822,24 @@ export default function KineticGallery() {
                       stiffness: 200,
                       damping: 22,
                     }}
-                    className={`h-[68vh] relative overflow-hidden group/manga border-[3px] border-white cursor-pointer shrink-0 snap-center ${
+                    className={`h-[68vh] relative overflow-hidden group/manga cursor-pointer shrink-0 snap-center ${
                       isActive ? 'z-10 shadow-[6px_6px_0px_var(--color-acid)]' : 'z-0 opacity-60'
                     }`}
                   >
                     {/* Background Image */}
-                    <div className="absolute inset-0 w-full h-full bg-void">
+                    <div 
+                      className="absolute inset-0 w-full h-full transition-colors duration-500"
+                      style={{ backgroundColor: getPanelColor(idx) }}
+                    >
                       <img 
                         src={item.posterImage} 
                         alt={item.title} 
-                        className={`w-full h-full object-cover transition-all duration-700 ${
+                        className={`w-full h-full object-cover transition-all duration-700 mix-blend-luminosity ${
                           isActive 
-                            ? 'scale-105 filter-none brightness-[0.75]' 
-                            : 'scale-100 grayscale opacity-65'
+                            ? 'scale-105 filter-none opacity-100' 
+                            : 'scale-100 opacity-40'
                         }`}
+                        style={isActive ? { mixBlendMode: 'normal' } : undefined}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none z-10" />
                       
@@ -778,7 +848,8 @@ export default function KineticGallery() {
                         className="absolute inset-0 pointer-events-none opacity-[0.05] mix-blend-overlay z-10"
                         style={{
                           backgroundImage: `radial-gradient(circle, #fff 15%, transparent 16%)`,
-                          backgroundSize: '6px 6px'
+                          backgroundSize: '6px 6px',
+                          backgroundPosition: 'var(--manga-scroll-x, 0px) 0px'
                         }}
                       />
                     </div>
@@ -792,7 +863,7 @@ export default function KineticGallery() {
                       transition={{ duration: 0.2 }}
                       className="absolute inset-0 flex flex-col justify-end items-center pb-8 z-20 pointer-events-none"
                     >
-                      <div className="bg-ink border-2 border-white p-2.5 shadow-[3px_3px_0px_var(--color-acid)] max-w-[85%]">
+                      <div className="bg-ink border-2 border-white p-2.5 shadow-[3px_3px_0px_var(--color-acid)] max-w-[85%] sketchy-border">
                         <h3 
                           className="font-display text-xs uppercase tracking-tighter whitespace-nowrap text-white text-center"
                           style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
@@ -814,12 +885,12 @@ export default function KineticGallery() {
                         >
                           <div className="flex gap-2 mb-1.5">
                             {item.score && (
-                              <span className="bg-acid text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_white]">
+                              <span className="bg-acid text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_white] sketchy-border">
                                 ★ {item.score}%
                               </span>
                             )}
                             {item.year && (
-                              <span className="bg-white text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_var(--color-cyber)]">
+                              <span className="bg-white text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_var(--color-cyber)] sketchy-border">
                                 {item.year}
                               </span>
                             )}
@@ -835,15 +906,17 @@ export default function KineticGallery() {
                             </div>
                           )}
 
-                          <p className="font-mono text-[8px] leading-relaxed text-white/95 line-clamp-3 bg-black/70 p-2 border-l-2 border-acid backdrop-blur-sm">
+                          <p className="font-mono text-[8px] leading-relaxed text-white/95 line-clamp-3 bg-black/70 p-2 border-l-2 border-acid backdrop-blur-sm sketchy-border">
                             {item.synopsis}
                           </p>
                         </motion.div>
                       )}
                     </AnimatePresence>
 
-                    {/* Outline border to mimic a comic-book frame */}
-                    <div className="absolute inset-0 border-[3px] border-white pointer-events-none z-20" />
+                    {/* Outline border to mimic a sketchy comic-book frame */}
+                    <div 
+                      className="absolute inset-0 border-[3px] border-white pointer-events-none z-20 sketchy-border" 
+                    />
                   </motion.div>
                 );
               })}
@@ -856,7 +929,7 @@ export default function KineticGallery() {
             {renderMobileHeader()}
 
             {/* Image Panel (35vh) */}
-            <div className="w-full h-[35vh] relative overflow-hidden border-b-[4px] border-white bg-void flex items-center justify-center">
+            <div className="w-full h-[35vh] relative overflow-hidden bg-void flex items-center justify-center">
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentSrc}
@@ -871,6 +944,9 @@ export default function KineticGallery() {
                 />
               </AnimatePresence>
 
+              {/* Sketchy Bottom Border */}
+              <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-[4px] border-white pointer-events-none z-30 sketchy-border" />
+
               {/* Pinned controls inside image top-right */}
               <div className="absolute top-3 right-3 z-30 flex gap-1.5">
                 <motion.button 
@@ -878,7 +954,7 @@ export default function KineticGallery() {
                   onClick={() => {
                     setImageType(prev => prev === 'poster' ? 'cover' : 'poster');
                   }}
-                  className="bg-acid text-ink border-[2px] border-ink px-2.5 py-1.5 font-mono font-black text-[8px] uppercase flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+                  className="bg-acid text-ink border-[2px] border-ink px-2.5 py-1.5 font-mono font-black text-[8px] uppercase flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)] sketchy-border"
                 >
                   {imageType === 'poster' ? <ImageIcon size={10} /> : <LayoutTemplate size={10} />}
                   <span>{imageType === 'poster' ? 'BANNER' : 'POSTER'}</span>
@@ -888,7 +964,7 @@ export default function KineticGallery() {
                   <motion.button 
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setIsDownloadOpen(!isDownloadOpen)}
-                    className="bg-white text-ink border-[2px] border-ink px-2.5 py-1.5 font-mono font-black text-[8px] uppercase flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+                    className="bg-white text-ink border-[2px] border-ink px-2.5 py-1.5 font-mono font-black text-[8px] uppercase flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)] sketchy-border"
                   >
                     <Download size={10} />
                     <span>DL</span>
@@ -902,7 +978,7 @@ export default function KineticGallery() {
                           initial={{ opacity: 0, y: 5, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                          className="absolute right-0 mt-1 w-32 bg-ink border-[2px] border-white text-white font-mono text-[8px] font-bold uppercase z-50 shadow-[4px_4px_0px_rgba(255,255,255,1)]"
+                          className="absolute right-0 mt-1 w-32 bg-ink border-[2px] border-white text-white font-mono text-[8px] font-bold uppercase z-50 shadow-[4px_4px_0px_rgba(255,255,255,1)] sketchy-border"
                         >
                           <button 
                             onClick={() => { setIsDownloadOpen(false); handleDownload('raw'); }}
@@ -943,21 +1019,24 @@ export default function KineticGallery() {
 
             {/* Details Panel (35vh) */}
             <div 
-              className="w-full h-[35vh] overflow-hidden flex flex-col justify-between p-4 relative border-b-[4px] border-white"
+              className="w-full h-[35vh] overflow-hidden flex flex-col justify-between p-4 relative"
               style={{ 
                 background: `linear-gradient(135deg, ${accentColor}80 0%, #000000 100%), ${accentColor}`,
                 backgroundBlendMode: 'multiply'
               }}
             >
+              {/* Sketchy Bottom Border */}
+              <div className="absolute bottom-0 left-0 right-0 h-[4px] border-b-[4px] border-white pointer-events-none z-30 sketchy-border" />
+
               <div className="flex flex-col min-h-0">
                 <div className="flex gap-2 items-center mb-1">
                   {featured.score && (
-                    <span className="bg-acid text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_white]">
+                    <span className="bg-acid text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_white] sketchy-border">
                       ★ {featured.score}%
                     </span>
                   )}
                   {featured.year && (
-                    <span className="bg-white text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_var(--color-cyber)]">
+                    <span className="bg-white text-ink font-mono font-black text-[9px] px-1.5 py-0.5 border border-ink shadow-[1px_1px_0px_var(--color-cyber)] ... sketchy-border">
                       {featured.year}
                     </span>
                   )}
@@ -974,14 +1053,14 @@ export default function KineticGallery() {
                   </div>
                 )}
                 
-                <div className="flex-1 overflow-y-auto mt-2 pr-1 font-mono text-[9px] leading-relaxed text-white/90 bg-black/40 p-2 border-l-2 border-acid backdrop-blur-sm scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                <div data-lenis-prevent="true" className="flex-1 overflow-y-auto mt-2 pr-1 font-mono text-[9px] leading-relaxed text-white/90 bg-black/40 p-2 border-l-2 border-acid backdrop-blur-sm scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                   {featured.synopsis || 'NO DESCRIPTION AVAILABLE.'}
                 </div>
               </div>
 
-              <div className="flex gap-1.5 overflow-x-auto py-1 mt-1.5 scrollbar-none shrink-0" style={{ scrollbarWidth: 'none' }}>
+              <div data-lenis-prevent="true" className="flex gap-1.5 overflow-x-auto py-1 mt-1.5 scrollbar-none shrink-0" style={{ scrollbarWidth: 'none' }}>
                 {featured.tags.slice(0, 4).map(tag => (
-                  <span key={tag} className="font-mono font-bold text-[8px] px-1.5 py-0.5 bg-white text-ink uppercase shrink-0 border border-ink shadow-[1px_1px_0px_rgba(255,255,255,0.3)]">
+                  <span key={tag} className="font-mono font-bold text-[8px] px-1.5 py-0.5 bg-white text-ink uppercase shrink-0 border border-ink shadow-[1px_1px_0px_rgba(255,255,255,0.3)] sketchy-border">
                     {tag}
                   </span>
                 ))}
@@ -991,6 +1070,7 @@ export default function KineticGallery() {
             {/* Thumbnails Slider (20vh) */}
             <div 
               ref={mobileThumbRef}
+              data-lenis-prevent="true"
               className="w-full h-[20vh] flex flex-row overflow-x-auto overflow-y-hidden bg-ink py-2 px-3 gap-3 scrollbar-none snap-x snap-mandatory"
               style={{ scrollbarWidth: 'none' }}
             >
@@ -1006,7 +1086,7 @@ export default function KineticGallery() {
                       }
                       setCurrentIndex(idx);
                     }}
-                    className={`flex flex-row items-center w-[150px] shrink-0 border-2 p-2 snap-center rounded-sm cursor-pointer ${
+                    className={`flex flex-row items-center w-[150px] shrink-0 border-2 p-2 snap-center rounded-sm cursor-pointer sketchy-border ${
                       isActive ? 'text-ink border-white' : 'text-white border-white/20'
                     }`}
                     style={isActive ? { backgroundColor: accentColor } : undefined}
@@ -1036,24 +1116,42 @@ export default function KineticGallery() {
         /* MANGA PANELS VIEWPORT */
         <div className="w-full h-full flex flex-col bg-ink text-white relative z-20">
           {/* Header */}
-          <div className="h-[12vh] border-b-[4px] border-white flex items-center justify-between px-6 bg-void z-30 shrink-0">
+          <motion.div 
+            animate={{ 
+              backgroundColor: hoveredMangaIndex !== null ? getPanelColor(hoveredMangaIndex) : '#3D00FF' 
+            }}
+            transition={{ duration: 0.3 }}
+            className="h-[12vh] border-b-[4px] border-white flex items-center justify-between px-6 z-30 shrink-0"
+          >
             <div className="flex items-center gap-4">
-              <GalleryShaderText text="MANGA" className="text-4xl md:text-5xl font-display uppercase m-0 leading-none mix-blend-difference" />
-              <span className="font-mono text-[9px] font-bold bg-white text-ink px-2 py-0.5 border-2 border-ink uppercase tracking-widest hidden md:inline-block animate-pulse shadow-[2px_2px_0px_var(--color-acid)]">
-                PANEL VIEW
-              </span>
+              <GalleryShaderText text="GALLERY" className="text-4xl md:text-5xl font-display uppercase m-0 leading-none mix-blend-difference" />
             </div>
-            {renderSearchBar("border-2 border-white max-w-md w-full")}
-          </div>
+            
+            <div className="flex items-center gap-4 w-full max-w-md justify-end">
+              <button 
+                onClick={() => setMangaLayout(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
+                className="flex items-center gap-2 bg-ink border-[2px] border-white px-3 py-2 text-white sketchy-border hover:bg-white hover:text-ink transition-colors shadow-[2px_2px_0px_white]"
+                title="Toggle Manga Layout"
+              >
+                {mangaLayout === 'vertical' ? <Rows size={14} /> : <Columns size={14} />}
+              </button>
+              
+              <div className="flex-1">
+                {renderSearchBar("border-2 border-white w-full")}
+              </div>
+            </div>
+          </motion.div>
 
           {/* Panels Grid */}
-          <div className="flex-1 flex w-full h-[88vh] overflow-hidden">
+          <div data-lenis-prevent="true" className={`flex-1 flex w-full h-[88vh] overflow-hidden ${mangaLayout === 'vertical' ? 'flex-row' : 'flex-col'}`}>
             {catalog.map((item, idx) => {
               const isHovered = hoveredMangaIndex === idx;
               const isAnyHovered = hoveredMangaIndex !== null;
               const isActive = idx === currentIndex;
               
-              const defaultPolygon = MANGA_POLYGONS[idx % MANGA_POLYGONS.length];
+              const defaultPolygon = mangaLayout === 'vertical' 
+                ? MANGA_POLYGONS[idx % MANGA_POLYGONS.length]
+                : MANGA_HORIZONTAL_POLYGONS[idx % MANGA_HORIZONTAL_POLYGONS.length];
               const currentPolygon = isHovered ? HOVERED_POLYGON : defaultPolygon;
               
               return (
@@ -1065,7 +1163,9 @@ export default function KineticGallery() {
                     setCurrentIndex(idx);
                   }}
                   animate={{
-                    flex: isHovered ? 4.5 : (isAnyHovered ? 0.6 : 1),
+                    flex: isHovered 
+                      ? (mangaLayout === 'vertical' ? 4.5 : 12) 
+                      : (isAnyHovered ? 0.6 : 1),
                     clipPath: currentPolygon,
                   }}
                   transition={{
@@ -1073,50 +1173,68 @@ export default function KineticGallery() {
                     stiffness: 220,
                     damping: 24,
                   }}
-                  className={`h-full relative overflow-hidden group/manga border-r-[3px] border-white cursor-pointer ${
+                  className={`relative overflow-hidden group/manga cursor-pointer ${mangaLayout === 'vertical' ? 'h-full border-r-[3px]' : 'w-full border-b-[3px]'} border-white ${
                     isActive ? 'z-10' : 'z-0'
                   }`}
                 >
                   {/* Background Image */}
-                  <div className="absolute inset-0 w-full h-full bg-void">
+                  <div 
+                    className="absolute inset-0 w-full h-full transition-colors duration-500"
+                    style={{ backgroundColor: getPanelColor(idx) }}
+                  >
                     <img 
                       src={item.posterImage} 
                       alt={item.title} 
-                      className={`w-full h-full object-cover transition-all duration-700 ${
+                      className={`w-full h-full object-cover transition-all duration-700 mix-blend-luminosity ${
                         isHovered 
-                          ? 'scale-105 filter-none brightness-[0.7]' 
-                          : 'scale-100 grayscale opacity-60 group-hover/manga:grayscale-0 group-hover/manga:opacity-85'
+                          ? 'scale-105 filter-none opacity-100' 
+                          : 'scale-100 opacity-40 group-hover/manga:opacity-75'
                       }`}
+                      style={isHovered ? { mixBlendMode: 'normal' } : undefined}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent pointer-events-none z-10" />
                     
                     {/* Half-tone overlay */}
                     <div 
-                      className="absolute inset-0 pointer-events-none opacity-[0.07] mix-blend-overlay z-10"
+                      className="absolute inset-0 pointer-events-none opacity-[0.07] mix-blend-overlay z-10 transition-all duration-300 ease-out"
                       style={{
                         backgroundImage: `radial-gradient(circle, #fff 15%, transparent 16%)`,
-                        backgroundSize: '6px 6px'
+                        backgroundSize: '6px 6px',
+                        backgroundPosition: 'var(--manga-mouse-x, 0px) var(--manga-mouse-y, 0px)'
                       }}
                     />
                   </div>
 
-                  {/* Vertical Title (when collapsed) */}
+                  {/* Title (when collapsed) */}
                   <motion.div
                     animate={{
                       opacity: isHovered ? 0 : 1,
-                      y: isHovered ? -20 : 0
+                      y: isHovered ? (mangaLayout === 'vertical' ? -20 : 0) : 0,
+                      x: isHovered ? (mangaLayout === 'horizontal' ? -20 : 0) : 0,
                     }}
                     transition={{ duration: 0.2 }}
-                    className="absolute inset-0 flex flex-col justify-end items-center pb-8 z-20 pointer-events-none"
+                    className={`absolute inset-0 flex z-20 pointer-events-none ${
+                      mangaLayout === 'vertical' 
+                        ? 'flex-col justify-end items-center pb-8' 
+                        : 'flex-row justify-start items-center pl-4'
+                    }`}
                   >
-                    <div className="bg-ink border-2 border-white p-3 shadow-[4px_4px_0px_var(--color-acid)] max-w-[80%]">
-                      <h3 
-                        className="font-display text-sm md:text-base uppercase tracking-tighter whitespace-nowrap text-white text-center"
-                        style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                      >
-                        {item.title}
-                      </h3>
-                    </div>
+                    {mangaLayout === 'vertical' ? (
+                      <div className="bg-ink border-2 border-white p-3 shadow-[4px_4px_0px_var(--color-acid)] max-w-[80%]">
+                        <h3 
+                          className="font-display text-sm md:text-base uppercase tracking-tighter whitespace-nowrap text-white text-center"
+                          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                        >
+                          {item.title}
+                        </h3>
+                      </div>
+                    ) : (
+                      <div className="bg-ink border-2 border-white px-3 py-1 shadow-[2px_2px_0px_var(--color-acid)] max-w-[80%] overflow-hidden">
+                        <h3 className="font-display text-xs md:text-sm uppercase tracking-tighter whitespace-nowrap text-white text-left truncate">
+                          {item.title}
+                        </h3>
+                      </div>
+                    )}
                   </motion.div>
 
                   {/* Details Overlay (when expanded) */}
@@ -1151,22 +1269,79 @@ export default function KineticGallery() {
                             {item.jpTitle}
                           </div>
                         )}
-
-                        <p className="font-mono text-xs md:text-sm text-white/80 line-clamp-3 md:line-clamp-4 max-w-xl leading-relaxed bg-black/60 p-4 border-l-4 border-acid backdrop-blur-sm">
-                          {item.synopsis}
-                        </p>
-
-                        <div className="mt-6 flex items-center gap-4">
-                          <span className="font-mono text-[9px] font-black tracking-widest text-acid animate-pulse">
-                            {isActive ? '[ IN FOCUS ]' : '[ CLICK TO FOCUS ]'}
-                          </span>
-                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Outline border to mimic a comic-book frame */}
-                  <div className="absolute inset-0 border-[3px] border-white pointer-events-none z-20" />
+                  {/* Download Button */}
+                  <div className="absolute top-4 right-4 z-40">
+                    <motion.button 
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent panel click
+                        setCurrentIndex(idx); // Update featured/currentSrc for download
+                        setActiveDownloadIndex(activeDownloadIndex === idx ? null : idx);
+                      }}
+                      className="bg-white text-ink border-[2px] border-ink px-2.5 py-1.5 font-mono font-black text-[8px] uppercase flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)] sketchy-border"
+                    >
+                      <Download size={12} />
+                      <span>DL</span>
+                    </motion.button>
+
+                    <AnimatePresence>
+                      {activeDownloadIndex === idx && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={(e) => { e.stopPropagation(); setActiveDownloadIndex(null); }} 
+                          />
+                          <motion.div 
+                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                            className="absolute right-0 mt-2 w-36 bg-ink border-[2px] border-white text-white font-mono text-[9px] font-bold uppercase z-50 shadow-[4px_4px_0px_rgba(255,255,255,1)] sketchy-border"
+                          >
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveDownloadIndex(null); handleDownload('raw'); }}
+                              className="w-full text-left px-3 py-2 hover:bg-acid hover:text-ink border-b border-white/20"
+                            >
+                              Raw JPG
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveDownloadIndex(null); handleDownload('png'); }}
+                              className="w-full text-left px-3 py-2 hover:bg-acid hover:text-ink border-b border-white/20"
+                            >
+                              PNG
+                            </button>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation();
+                                setActiveDownloadIndex(null); 
+                                setSelectedHighlightColor(accentColor);
+                                setSelectedShadowColor('#000000');
+                                setIsDuotonePopupOpen(true); 
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-acid hover:text-ink border-b border-white/20"
+                            >
+                              Duo-Tone
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setActiveDownloadIndex(null); handleDownload('svg'); }}
+                              className="w-full text-left px-3 py-2 hover:bg-acid hover:text-ink"
+                            >
+                              SVG
+                            </button>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Outline border to mimic a sketchy comic-book frame */}
+                  <div 
+                    className="absolute inset-0 border-[3px] border-white pointer-events-none z-20" 
+                    style={{ filter: 'url(#manga-sketchy-border)' }}
+                  />
                 </motion.div>
               );
             })}
@@ -1212,7 +1387,7 @@ export default function KineticGallery() {
                   onClick={() => {
                     setImageType(prev => prev === 'poster' ? 'cover' : 'poster');
                   }}
-                  className="bg-acid text-ink border-[4px] border-ink px-3 py-2 font-mono font-black text-[10px] uppercase flex items-center gap-2 hover:bg-white hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200"
+                  className="bg-acid text-ink border-[4px] border-ink px-3 py-2 font-mono font-black text-[10px] uppercase flex items-center gap-2 hover:bg-white hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200 sketchy-border"
                 >
                   {imageType === 'poster' ? <ImageIcon size={14} /> : <LayoutTemplate size={14} />}
                   {imageType === 'poster' ? 'BANNER' : 'POSTER'}
@@ -1225,7 +1400,7 @@ export default function KineticGallery() {
                     whileTap={{ scale: 0.95 }}
                     disabled={isDownloading}
                     onClick={() => setIsDownloadOpen(!isDownloadOpen)}
-                    className="bg-white text-ink border-[4px] border-ink px-3 py-2 font-mono font-black text-[10px] uppercase flex items-center justify-center gap-2 hover:bg-acid hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200 disabled:opacity-80 disabled:pointer-events-none min-w-[120px] h-[36px] overflow-hidden relative"
+                    className="bg-white text-ink border-[4px] border-ink px-3 py-2 font-mono font-black text-[10px] uppercase flex items-center justify-center gap-2 hover:bg-acid hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200 disabled:opacity-80 disabled:pointer-events-none min-w-[120px] h-[36px] overflow-hidden relative sketchy-border"
                   >
                     <AnimatePresence mode="popLayout">
                       {isDownloading ? (
@@ -1298,7 +1473,7 @@ export default function KineticGallery() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute right-0 mt-2 w-48 bg-ink border-[4px] border-white text-white font-mono text-[10px] font-bold uppercase z-50 shadow-[6px_6px_0px_rgba(255,255,255,1)]"
+                          className="absolute right-0 mt-2 w-48 bg-ink border-[4px] border-white text-white font-mono text-[10px] font-bold uppercase z-50 shadow-[6px_6px_0px_rgba(255,255,255,1)] sketchy-border"
                         >
                           <button 
                             onClick={() => { setIsDownloadOpen(false); handleDownload('raw'); }}
@@ -1358,6 +1533,10 @@ export default function KineticGallery() {
 
             // Reusable Meta Block
             const renderMetaBlock = (height: number, className = '') => {
+              const hasBottomBorder = className.includes('border-b');
+              const hasRightBorder = className.includes('border-r');
+              const cleanClassName = className.replace(/border(-[a-z])?-([0-9]|white)/g, '').trim();
+
               // Calculate dynamic font sizes
               const titleFontSize = Math.min(84, Math.max(36, Math.round(height * 0.18)));
               const enFontSize = Math.min(28, Math.max(14, Math.round(height * 0.08)));
@@ -1366,7 +1545,7 @@ export default function KineticGallery() {
 
               return (
                 <div 
-                  className={`overflow-hidden flex flex-col justify-between h-full min-w-0 ${className}`}
+                  className={`overflow-hidden flex flex-col justify-between h-full min-w-0 relative ${cleanClassName}`}
                   style={{ 
                     padding: `${padding}px`, 
                     height: `${height}px`,
@@ -1374,6 +1553,12 @@ export default function KineticGallery() {
                     backgroundBlendMode: 'multiply'
                   }}
                 >
+                  {hasBottomBorder && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] border-b-2 border-white pointer-events-none z-30 sketchy-border" />
+                  )}
+                  {hasRightBorder && (
+                    <div className="absolute top-0 right-0 bottom-0 w-[2px] border-r-2 border-white pointer-events-none z-30 sketchy-border" />
+                  )}
                   <div className="flex flex-col">
                     <motion.h1 
                       key={featured.id + '-title'}
@@ -1445,6 +1630,7 @@ export default function KineticGallery() {
             // Reusable Thumbnail List
             const renderThumbnailList = (direction: 'vertical' | 'horizontal' = 'vertical') => (
               <div 
+                data-lenis-prevent="true"
                 className={`flex-1 flex thumbnail-list bg-ink ${direction === 'horizontal' ? 'flex-row overflow-x-auto overflow-y-hidden' : 'flex-col overflow-y-auto overflow-x-hidden'}`} 
                 style={{ scrollbarWidth: 'none' }}
               >
@@ -1465,16 +1651,23 @@ export default function KineticGallery() {
                         }
                         setCurrentIndex(idx);
                       }}
-                      className={`flex cursor-pointer shrink-0 ${
+                      className={`flex cursor-pointer shrink-0 relative ${
                         direction === 'horizontal' 
-                          ? `flex-col w-40 md:w-48 border-r-2 border-white/20 p-4 h-full` 
-                          : `flex-row items-center h-24 border-b-2 border-white/20 p-4 w-full`
+                          ? `flex-col w-40 md:w-48 p-4 h-full` 
+                          : `flex-row items-center h-24 p-4 w-full`
                       } ${isActive ? 'text-ink border-white' : 'text-white'}`}
                       style={isActive ? { backgroundColor: accentColor } : undefined}
                     >
+                      {/* Sketchy border divider */}
+                      <div className={`absolute pointer-events-none z-20 sketchy-border opacity-50 ${
+                        direction === 'horizontal' 
+                          ? 'top-0 right-0 bottom-0 w-[2px] border-r-2 border-white/20' 
+                          : 'left-0 right-0 bottom-0 h-[2px] border-b-2 border-white/20'
+                      }`} />
+
                       <motion.div 
                         whileHover={{ scale: 1.08 }}
-                        className={`shrink-0 border-2 border-current overflow-hidden relative bg-void ${direction === 'horizontal' ? 'w-full h-24 mb-3' : 'w-14 h-16 mr-3'}`}
+                        className={`shrink-0 border-2 border-current sketchy-border overflow-hidden relative bg-void z-10 ${direction === 'horizontal' ? 'w-full h-24 mb-3' : 'w-14 h-16 mr-3'}`}
                       >
                         <img src={imageType === 'cover' ? (item.coverImage || item.posterImage) : item.posterImage} alt="" className={`w-full h-full object-cover transition-all duration-300 ${isActive ? 'grayscale-0' : 'grayscale hover:grayscale-0'}`} />
                       </motion.div>
@@ -1505,17 +1698,19 @@ export default function KineticGallery() {
                   <>
                     {/* Right: search + thumbnails */}
                     <motion.div 
-                      className="absolute top-0 right-0 bottom-0 z-20 flex flex-col bg-void text-white border-l-2 border-t-2 border-white overflow-hidden"
+                      className="absolute top-0 right-0 bottom-0 z-20 flex flex-col bg-void text-white overflow-hidden"
                       style={{ left: dynamicBorderX }}
                     >
+                      <div className="absolute inset-0 border-l-2 border-t-2 border-white pointer-events-none z-30 sketchy-border" />
                       {renderSearchBar("border-b-2 border-white")}
                       {renderThumbnailList("vertical")}
                     </motion.div>
                     {/* Bottom: meta info */}
                     <motion.div 
-                      className="absolute left-0 bottom-0 z-20 bg-void text-white border-t-2 border-white overflow-hidden flex flex-col"
+                      className="absolute left-0 bottom-0 z-20 bg-void text-white overflow-hidden flex flex-col"
                       style={{ width: dynamicBorderX, top: dynamicBorderY, height: dynamicBottomHeight }}
                     >
+                      <div className="absolute inset-0 border-t-2 border-white pointer-events-none z-30 sketchy-border" />
                       {renderMetaBlock(containerH - imgHeight)}
                     </motion.div>
                   </>
@@ -1524,9 +1719,10 @@ export default function KineticGallery() {
                 {/* === SCENARIO 2: Only right space (poster fills full height) === */}
                 {hasRightSpace && !hasBottomSpace && (
                   <motion.div 
-                    className="absolute top-0 right-0 bottom-0 z-20 flex flex-col bg-void text-white border-l-2 border-t-2 border-white overflow-hidden"
+                    className="absolute top-0 right-0 bottom-0 z-20 flex flex-col bg-void text-white overflow-hidden"
                     style={{ left: dynamicBorderX }}
                   >
+                    <div className="absolute inset-0 border-l-2 border-t-2 border-white pointer-events-none z-30 sketchy-border" />
                     {renderMetaBlock(metaHeight, "border-b-2 border-white shrink-0")}
                     {renderSearchBar("border-b-2 border-white")}
                     {renderThumbnailList("vertical")}
@@ -1536,9 +1732,10 @@ export default function KineticGallery() {
                 {/* === SCENARIO 3: Only bottom space (banner fills full width) === */}
                 {!hasRightSpace && hasBottomSpace && (
                   <motion.div 
-                    className="absolute left-0 right-0 bottom-0 z-20 bg-void text-white border-t-2 border-white overflow-hidden flex flex-row"
+                    className="absolute left-0 right-0 bottom-0 z-20 bg-void text-white overflow-hidden flex flex-row"
                     style={{ top: dynamicBorderY, height: dynamicBottomHeight }}
                   >
+                    <div className="absolute inset-0 border-t-2 border-white pointer-events-none z-30 sketchy-border" />
                     {renderMetaBlock(containerH - imgHeight, "shrink-0 w-[40%] border-r-2 border-white")}
                     <div className="flex-1 flex flex-col h-full min-w-0">
                       {renderSearchBar("border-b-2 border-white")}
@@ -1567,7 +1764,7 @@ export default function KineticGallery() {
       {isDuotonePopupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
           <div 
-            className="bg-ink border-[6px] border-white max-w-sm w-full p-6 text-white font-mono uppercase text-[11px] shadow-[10px_10px_0px_rgba(255,255,255,1)] relative flex flex-col gap-4"
+            className="bg-ink border-[6px] border-white max-w-sm w-full p-6 text-white font-mono uppercase text-[11px] shadow-[10px_10px_0px_rgba(255,255,255,1)] relative flex flex-col gap-4 sketchy-border"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1583,7 +1780,7 @@ export default function KineticGallery() {
 
             {/* Preview Block */}
             <div 
-              className="w-full h-16 border-[4px] border-white flex items-center justify-center font-black text-xs tracking-wider transition-all duration-300"
+              className="w-full h-16 border-[4px] border-white flex items-center justify-center font-black text-xs tracking-wider transition-all duration-300 sketchy-border"
               style={{
                 background: `linear-gradient(135deg, ${selectedShadowColor} 0%, ${selectedHighlightColor} 100%)`,
                 color: selectedHighlightColor,
@@ -1596,7 +1793,7 @@ export default function KineticGallery() {
             {/* HIGHLIGHT COLOR (NEON / FUNKY) */}
             <div className="flex flex-col gap-2">
               <div className="text-[10px] text-white/60 font-bold">HIGHLIGHT COLOR (NEO/FUNKY):</div>
-              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              <div data-lenis-prevent="true" className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                 {/* Dynamically append the current accentColor as the first option if it's not already in the list */}
                 {[{ name: 'CURRENT ACCENT', hex: accentColor }, ...FUNKY_HIGHLIGHT_COLORS].map((c, i) => (
                   <button
@@ -1619,7 +1816,7 @@ export default function KineticGallery() {
                   type="color"
                   value={selectedHighlightColor}
                   onChange={(e) => setSelectedHighlightColor(e.target.value)}
-                  className="w-8 h-6 bg-transparent border-2 border-white cursor-pointer p-0 outline-none"
+                  className="w-8 h-6 bg-transparent border-2 border-white cursor-pointer p-0 outline-none sketchy-border"
                 />
                 <span className="text-[9px] font-bold text-acid">{selectedHighlightColor}</span>
               </div>
@@ -1628,7 +1825,7 @@ export default function KineticGallery() {
             {/* SHADOW COLOR (DARK MATCHES) */}
             <div className="flex flex-col gap-2">
               <div className="text-[10px] text-white/60 font-bold">SHADOW COLOR (DARK MATCHES):</div>
-              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              <div data-lenis-prevent="true" className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                 {MATCHING_DARK_COLORS.map(c => (
                   <button
                     key={c.hex}
@@ -1650,7 +1847,7 @@ export default function KineticGallery() {
                   type="color"
                   value={selectedShadowColor}
                   onChange={(e) => setSelectedShadowColor(e.target.value)}
-                  className="w-8 h-6 bg-transparent border-2 border-white cursor-pointer p-0 outline-none"
+                  className="w-8 h-6 bg-transparent border-2 border-white cursor-pointer p-0 outline-none sketchy-border"
                 />
                 <span className="text-[9px] font-bold text-acid">{selectedShadowColor}</span>
               </div>
@@ -1663,13 +1860,13 @@ export default function KineticGallery() {
                   setIsDuotonePopupOpen(false);
                   handleDownload('duotone');
                 }}
-                className="flex-1 bg-acid text-ink border-[4px] border-ink py-2 font-mono font-black text-[10px] uppercase text-center hover:bg-white hover:shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200"
+                className="flex-1 bg-acid text-ink border-[4px] border-ink py-2 font-mono font-black text-[10px] uppercase text-center hover:bg-white hover:shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200 sketchy-border"
               >
                 DOWNLOAD
               </button>
               <button
                 onClick={() => setIsDuotonePopupOpen(false)}
-                className="flex-1 bg-white text-ink border-[4px] border-ink py-2 font-mono font-black text-[10px] uppercase text-center hover:bg-red-500 hover:text-white hover:shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200"
+                className="flex-1 bg-white text-ink border-[4px] border-ink py-2 font-mono font-black text-[10px] uppercase text-center hover:bg-red-500 hover:text-white hover:shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all duration-200 sketchy-border"
               >
                 CANCEL
               </button>
